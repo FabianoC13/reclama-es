@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { findBestRouteForCase } from '@/lib/tier2/official-route';
+import { getCopyPasteFields } from '@/lib/tier2/sede-package';
 
 export async function getTier2Status(caseId: string, sessionId: string) {
   const caseRecord = await prisma.case.findFirst({
@@ -32,6 +33,15 @@ export async function getTier2Status(caseId: string, sessionId: string) {
     completed: caseRecord.tier2Status === 'tier2_completed',
   };
 
+  let checklist: { label: string; ok: boolean; critical: boolean }[] = [];
+  if (pkg?.checklistJson) {
+    try {
+      checklist = JSON.parse(pkg.checklistJson);
+    } catch {
+      checklist = [];
+    }
+  }
+
   return {
     case: caseRecord,
     routeMatch,
@@ -40,6 +50,8 @@ export async function getTier2Status(caseId: string, sessionId: string) {
     readiness,
     timeline,
     steps,
+    copyFields: pkg ? getCopyPasteFields(pkg) : null,
+    checklist,
     nextAction: resolveNextAction(steps, routeMatch.bestRoute !== null),
   };
 }

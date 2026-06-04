@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tier2Disclaimer } from '@/components/tier2/DisclaimerBox';
 import { ExternalLink, Copy, Check } from 'lucide-react';
 
-type Step = 'overview' | 'readiness' | 'package' | 'sede' | 'submitted' | 'receipt' | 'done';
+type Step = 'overview' | 'readiness' | 'package' | 'sede' | 'receipt' | 'done';
 
 type RouteMatch = {
   bestRoute: {
@@ -59,38 +59,93 @@ export default function Tier2Flow({ caseId }: { caseId: string }) {
     notes: '',
   });
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [officialLink, setOfficialLink] = useState<{
+    procedureInfoUrl?: string;
+    procedureName?: string;
+    expectedPageTitle?: string;
+  } | null>(null);
+
+  const hydrateFromStatus = (data: {
+    package?: { id: string; status: string };
+    copyFields?: Record<string, string> | null;
+    checklist?: { label: string; ok: boolean; critical: boolean }[];
+    routeMatch?: RouteMatch | null;
+    steps?: {
+      completed?: boolean;
+      submittedExternal?: boolean;
+      packageGenerated?: boolean;
+      officialSiteOpened?: boolean;
+      readinessDone?: boolean;
+    };
+  }) => {
+    if (data.package?.id) {
+      setPackageId(data.package.id);
+      setPkgStatus(data.package.status);
+    }
+    if (data.copyFields) setCopyFields(data.copyFields);
+    if (data.checklist?.length) setChecklist(data.checklist);
+    try {
+      const guideJson = data.routeMatch?.bestRoute?.stepGuideJson;
+      if (guideJson) {
+        const guide = JSON.parse(guideJson);
+        setGuideSteps(guide?.steps ?? []);
+      }
+    } catch {
+      setGuideSteps([]);
+    }
+    if (data.steps?.completed) setStep('done');
+    else if (data.steps?.submittedExternal) setStep('receipt');
+    else if (data.steps?.packageGenerated || data.steps?.officialSiteOpened) setStep('sede');
+    else if (data.steps?.readinessDone) setStep('package');
+  };
 
   const loadStatus = useCallback(async () => {
     const res = await fetch(`/api/cases/${caseId}/tier2/status`);
     if (!res.ok) throw new Error('status');
     const data = await res.json();
-    if (data.package?.id) {
-      setPackageId(data.package.id);
-      setPkgStatus(data.package.status);
-    }
-    if (data.steps?.completed) setStep('done');
-    else if (data.steps?.submittedExternal) setStep('receipt');
-    else if (data.steps?.officialSiteOpened) setStep('submitted');
-    else if (data.steps?.packageGenerated) setStep('sede');
-    else if (data.steps?.readinessDone) setStep('package');
+    hydrateFromStatus(data);
     return data;
   }, [caseId]);
 
   useEffect(() => {
     (async () => {
       try {
-        await fetch(`/api/cases/${caseId}/tier2/start`, { method: 'POST' });
+        const startRes = await fetch(`/api/cases/${caseId}/tier2/start`, { method: 'POST' });
+        if (!startRes.ok) {
+          if (startRes.status === 404) {
+            setError(
+              'No se encontró este caso o la sesión no coincide. Crea un caso de prueba en /dev.',
+            );
+          } else {
+            setError('No se pudo iniciar el flujo Tier 2');
+          }
+          return;
+        }
         const routeRes = await fetch(`/api/cases/${caseId}/tier2/route`);
+        if (!routeRes.ok) {
+          setError('No se pudo cargar la ruta oficial');
+          return;
+        }
         const routeData = await routeRes.json();
         setRouteMatch(routeData);
         await loadStatus();
       } catch {
-        setError('No se pudo cargar el flujo Tier 2');
+        setError('No se pudo cargar el flujo Tier 2. Comprueba la base de datos (npm run db:setup).');
       } finally {
         setLoading(false);
       }
     })();
   }, [caseId, loadStatus]);
+
+  useEffect(() => {
+    if (step !== 'sede' || !packageId || copyFields) return;
+    (async () => {
+      const res = await fetch(`/api/tier2/packages/${packageId}/copy-fields`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.copyFields) setCopyFields(data.copyFields);
+    })();
+  }, [step, packageId, copyFields]);
 
   const startReadiness = () => {
     if (!routeMatch?.bestRoute) return;
@@ -144,7 +199,13 @@ export default function Tier2Flow({ caseId }: { caseId: string }) {
     if (!packageId) return;
     const res = await fetch(`/api/tier2/packages/${packageId}/open-official-site`, { method: 'POST' });
     const data = await res.json();
-    if (data.url) window.open(data.url, '_blank', 'noopener,noreferrer');
+    if (!res.ok || !data.url) return;
+    setOfficialLink({
+      procedureInfoUrl: data.procedureInfoUrl,
+      procedureName: data.procedureName,
+      expectedPageTitle: data.expectedPageTitle,
+    });
+    window.open(data.url, '_blank', 'noopener,noreferrer');
     setPkgStatus('opened_official_site');
   };
 
@@ -209,7 +270,9 @@ export default function Tier2Flow({ caseId }: { caseId: string }) {
       </Link>
 
       <h1 className="mt-4 font-display text-3xl font-medium">Presentación oficial en Sede Electrónica</h1>
-      <p className="mt-2 text-text-secondary">Caso {caseId.slice(0, 8)}…</p>
+      <p className="mt-2 text-text-secondary">
+        Caso <code className="text-xs">{decodeURIComponent(caseId).slice(0, 12)}</code>
+      </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {progressSteps.map((label, i) => (
@@ -223,8 +286,11 @@ export default function Tier2Flow({ caseId }: { caseId: string }) {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
+        <div className="mt-4 space-y-3 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <p>{error}</p>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/dev">Crear caso de prueba (dev)</Link>
+          </Button>
         </div>
       )}
 
@@ -343,17 +409,67 @@ export default function Tier2Flow({ caseId }: { caseId: string }) {
         </div>
       )}
 
+      {step === 'sede' && !packageId && (
+        <div className="mt-8 space-y-4">
+          <p className="text-sm text-text-secondary">
+            Falta el paquete de presentación. Genera el paquete en el paso anterior o crea un caso nuevo en{' '}
+            <Link href="/dev" className="text-accent-blue underline">
+              /dev
+            </Link>
+            .
+          </p>
+          <Button variant="secondary" onClick={() => setStep('package')}>
+            Ir a generar paquete
+          </Button>
+        </div>
+      )}
+
+      {step === 'sede' && packageId && !copyFields && (
+        <p className="mt-8 text-center text-text-secondary">Cargando campos del paquete…</p>
+      )}
+
       {step === 'sede' && packageId && copyFields && (
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
           <div className="space-y-4">
             <h2 className="font-display text-2xl">Presenta en la web oficial</h2>
             <p className="text-sm text-text-secondary">
-              Abre la Sede en una pestaña nueva. Mantén esta guía abierta.
+              {routeMatch?.bestRoute?.procedureName
+                ? `Trámite: «${routeMatch.bestRoute.procedureName}». El botón abre el formulario en línea, no el buscador general de trámites.`
+                : 'Abre el trámite en una pestaña nueva y mantén esta guía abierta.'}
             </p>
-            <Button onClick={openOfficialSite} className="w-full gap-2">
+            <Button onClick={openOfficialSite} className="w-full gap-2" size="lg">
               <ExternalLink className="h-4 w-4" />
-              Abrir Sede oficial
+              Abrir trámite en línea
             </Button>
+            <div className="card-surface space-y-2 text-sm text-text-secondary">
+              <p>
+                <strong className="text-text-primary">Paso en la web oficial (después del botón):</strong>{' '}
+                baja a la sección <em>Tramitar</em> → columna <em>En línea</em> → pulsa{' '}
+                <em>Solicitud de reclamaciones y denuncias de consumo</em>. A continuación verás la
+                pantalla <em>SISTEMA DE IDENTIFICACIÓN</em> (Cl@ve Móvil, Cl@ve Permanente, DNIe/Certificado,
+                eID.AS…). Tras identificarte, se abrirá el formulario de la reclamación.
+              </p>
+              <p>
+                <strong className="text-text-primary">Si ves «Buscar trámite o servicio»:</strong> has
+                caído en la página general. Cierra esa pestaña, vuelve aquí y pulsa de nuevo «Abrir
+                trámite en línea».
+              </p>
+              {(officialLink?.procedureInfoUrl ?? routeMatch?.bestRoute?.officialProcedureUrl) && (
+                <p>
+                  <a
+                    href={
+                      officialLink?.procedureInfoUrl ??
+                      routeMatch!.bestRoute!.officialProcedureUrl!
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-blue hover:underline"
+                  >
+                    Ficha del trámite en la Sede (referencia)
+                  </a>
+                </p>
+              )}
+            </div>
             <p className="text-xs text-warning">
               No cierres la web oficial sin descargar el justificante.
             </p>

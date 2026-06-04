@@ -3,28 +3,28 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const MADRID_STEP_GUIDE = {
-  id: 'madrid-omic-sede-guide-v1',
+  id: 'madrid-omic-sede-guide-v2',
   title: 'Presentar una reclamación de consumo en la Sede Electrónica de Madrid',
   steps: [
     {
       order: 1,
-      title: 'Abrir la Sede oficial',
+      title: 'Abrir la ficha del trámite',
       description:
-        'Pulsa el botón para abrir el trámite oficial en una pestaña nueva. No cierres esta guía.',
+        'Pulsa «Abrir trámite en línea» en esta app. Se abrirá la ficha «Reclamaciones y denuncias de consumo» (a veces la página baja sola hasta la sección «Tramitar»).',
       actionType: 'open_url',
     },
     {
       order: 2,
-      title: 'Iniciar tramitación en línea',
+      title: 'Iniciar la solicitud en línea',
       description:
-        'Busca el botón de tramitación en línea. La etiqueta puede ser «Tramitar en línea» o similar.',
+        'En la sección «Tramitar», columna «En línea», pulsa el enlace «Solicitud de reclamaciones y denuncias de consumo». No uses «Aporte de documentación» salvo que ya hayas presentado la reclamación.',
       actionType: 'manual',
     },
     {
       order: 3,
-      title: 'Identificarse',
+      title: 'Identificarse (Sistema de identificación)',
       description:
-        'Identifícate con Cl@ve, certificado digital, DNIe, eIDAS u otro método aceptado. Reclama nunca te pedirá contraseñas ni PIN.',
+        'Verás la pantalla «SISTEMA DE IDENTIFICACIÓN» del Ayuntamiento de Madrid. Elige el mismo método que marcaste en Reclama: Cl@ve Móvil, Cl@ve Permanente, DNIe/Certificado o eID.AS (UE). Completa el acceso en la web oficial; Reclama nunca te pedirá contraseñas ni PIN.',
       actionType: 'manual',
     },
     {
@@ -105,6 +105,13 @@ async function main() {
     update: {
       lastVerifiedAt: new Date(),
       stepGuideJson: JSON.stringify(MADRID_STEP_GUIDE),
+      procedureName: 'Reclamaciones y denuncias de consumo',
+      officialProcedureUrl:
+        'https://sede.madrid.es/portal/site/tramites/menuitem.62876cb64654a55e2dbd7003a8a409a0/?vgnextchannel=3deaa38813180210VgnVCM100000c90da8c0RCRD&vgnextfmt=default&vgnextoid=6cc20d9772448210VgnVCM2000000c205a0aRCRD',
+      onlineStartUrl:
+        'https://sede.madrid.es/sites/v/index.jsp?target=enLinea&vgnextchannel=23a99c5ffb020310VgnVCM100000171f5a0aRCRD&vgnextoid=6cc20d9772448210VgnVCM2000000c205a0aRCRD',
+      notesUserFacing:
+        'Tras abrir la ficha, en «Tramitar» → «En línea» debes pulsar «Solicitud de reclamaciones y denuncias de consumo». Luego te pedirán identificarte (Cl@ve, certificado, etc.).',
     },
     create: {
       authorityId: authority.id,
@@ -113,8 +120,9 @@ async function main() {
       routeType: 'sede_specific_form',
       procedureName: 'Reclamaciones y denuncias de consumo',
       officialProcedureUrl:
-        'https://sede.madrid.es/portal/site/tramites/menuitem.8e2b315002eb74a9c81deed1052898ca/?vgnextoid=8e2b315002eb74a9c81deed1052898ca&vgnextchannel=8e2b315002eb74a9c81deed1052898ca',
-      onlineStartUrl: 'https://sede.madrid.es',
+        'https://sede.madrid.es/portal/site/tramites/menuitem.62876cb64654a55e2dbd7003a8a409a0/?vgnextchannel=3deaa38813180210VgnVCM100000c90da8c0RCRD&vgnextfmt=default&vgnextoid=6cc20d9772448210VgnVCM2000000c205a0aRCRD',
+      onlineStartUrl:
+        'https://sede.madrid.es/sites/v/index.jsp?target=enLinea&vgnextchannel=23a99c5ffb020310VgnVCM100000171f5a0aRCRD&vgnextoid=6cc20d9772448210VgnVCM2000000c205a0aRCRD',
       requiresElectronicId: true,
       supportedAuthMethods: JSON.stringify([
         'clave_movil',
@@ -133,12 +141,25 @@ async function main() {
       verificationStatus: 'verified',
       lastVerifiedAt: new Date(),
       notesUserFacing:
-        'Esta vía oficial permite presentar una reclamación de consumo a través de la Sede Electrónica de Madrid. Deberás identificarte con un método electrónico aceptado. Tras el envío, descarga y guarda el justificante oficial.',
+        'Tras abrir la ficha, en «Tramitar» → «En línea» debes pulsar «Solicitud de reclamaciones y denuncias de consumo». Luego te pedirán identificarte (Cl@ve, certificado, etc.).',
       stepGuideJson: JSON.stringify(MADRID_STEP_GUIDE),
     },
   });
 
   console.log('Seed: Madrid OMIC route ready');
+
+  // Dev test case (stable session for /dev page)
+  const { DEV_FIXTURE } = await import('../lib/dev-fixture');
+  const { syncCaseFromSession } = await import('../lib/tier2/case-sync');
+  const DEV_SESSION_ID = 'dev-local-session';
+  const existing = await prisma.case.findFirst({ where: { sessionId: DEV_SESSION_ID } });
+  const c = await syncCaseFromSession(
+    DEV_SESSION_ID,
+    DEV_FIXTURE.wizard,
+    DEV_FIXTURE.documento,
+    existing?.id,
+  );
+  console.log('Seed: dev test case', c.id, '→ /dev or /casos/' + c.id + '/tier2');
 }
 
 main()

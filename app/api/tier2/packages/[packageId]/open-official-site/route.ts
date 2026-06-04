@@ -12,10 +12,9 @@ export async function POST(
   try {
     const sessionId = resolveSessionId(request);
     const pkg = await assertPackageAccess(params.packageId, sessionId);
-    const url =
-      pkg.route.onlineStartUrl ??
-      pkg.route.officialProcedureUrl ??
-      pkg.route.fallbackUrl;
+    // onlineStartUrl = direct "tramitar en línea" entry (not sede.madrid.es home)
+    const url = pkg.route.onlineStartUrl ?? pkg.route.officialProcedureUrl ?? pkg.route.fallbackUrl;
+    const procedureInfoUrl = pkg.route.officialProcedureUrl;
 
     if (!url) {
       return NextResponse.json({ error: 'URL oficial no disponible' }, { status: 400 });
@@ -29,7 +28,13 @@ export async function POST(
     await timeline.officialSiteOpened(pkg.caseId, sessionId, params.packageId);
     trackEvent('tier2_official_site_opened', { route_type: pkg.route.routeType });
 
-    return NextResponse.json({ url, packageId: params.packageId });
+    return NextResponse.json({
+      url,
+      procedureInfoUrl,
+      procedureName: pkg.route.procedureName,
+      expectedPageTitle: 'Reclamaciones y denuncias de consumo',
+      packageId: params.packageId,
+    });
   } catch {
     return NextResponse.json({ error: 'No autorizado' }, { status: 404 });
   }
