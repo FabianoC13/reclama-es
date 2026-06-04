@@ -15,13 +15,18 @@ export default function Footer() {
           <p className="mb-3 text-sm font-medium">Procedimientos</p>
           <ul className="space-y-2 text-sm text-text-secondary">
             <li>
-              <Link href="/procedimientos" className="hover:text-text-primary">
+              <Link href="/#procedimientos" className="hover:text-text-primary">
                 Procedimientos disponibles
               </Link>
             </li>
             <li>
-              <Link href="/guia-envio" className="hover:text-text-primary">
+              <Link href="/#guia-envio" className="hover:text-text-primary">
                 Guía de envío OMIC
+              </Link>
+            </li>
+            <li>
+              <Link href="/#presentar-sede" className="hover:text-text-primary">
+                Sede Madrid (guía)
               </Link>
             </li>
             <li>

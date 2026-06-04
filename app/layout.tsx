@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter, Lora } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/layout/Navbar';
+import SiteHeader from '@/components/layout/SiteHeader';
 import Footer from '@/components/layout/Footer';
-import DisclaimerBanner from '@/components/layout/DisclaimerBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,9 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${inter.variable} ${lora.variable}`}>
       <body>
-        <DisclaimerBanner />
-        <Navbar />
-        <main className="min-h-screen pt-20">{children}</main>
+        <SiteHeader />
+        <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>

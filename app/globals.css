@@ -66,14 +66,16 @@
     @apply rounded-xl border border-l-4 border-border border-l-warning bg-[#f5ebe3] px-4 py-4 text-sm text-text-secondary;
   }
 
-  .landing-nav {
-    @apply fixed left-0 right-0 top-0 z-50 transition-all duration-300;
+  .site-header {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
 
-  .landing-nav.scrolled {
-    border-bottom: 1px solid var(--border);
-    background-color: color-mix(in srgb, var(--bg-surface) 80%, transparent);
-    backdrop-filter: blur(12px);
+  .site-header nav {
+    position: relative;
   }
 }
 

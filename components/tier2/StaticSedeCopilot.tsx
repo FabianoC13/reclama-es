@@ -15,7 +15,7 @@ import { ExternalLink, Copy, Check } from 'lucide-react';
 
 const basePath = process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' ? '/reclama-es' : '';
 
-export default function StaticSedeCopilot() {
+export default function StaticSedeCopilot({ embedded = false }: { embedded?: boolean }) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const copyFields = MADRID_DEMO_COPY_FIELDS;
@@ -31,19 +31,24 @@ export default function StaticSedeCopilot() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Link href={`${basePath}/`} className="text-sm text-accent-blue hover:underline">
-        ← Inicio
-      </Link>
+    <div className={embedded ? 'mx-auto max-w-6xl' : 'mx-auto max-w-4xl px-4 py-8 sm:px-6'}>
+      {!embedded && (
+        <Link href={`${basePath}/`} className="text-sm text-accent-blue hover:underline">
+          ← Inicio
+        </Link>
+      )}
 
-      <h1 className="mt-4 font-display text-3xl font-medium">
-        Presentación oficial en Sede Electrónica
-      </h1>
+      <h2 className={`font-display text-3xl font-medium ${embedded ? '' : 'mt-4'}`}>
+        Presentación oficial en Sede Electrónica (Madrid)
+      </h2>
       <p className="mt-2 text-text-secondary">
-        Guía para Madrid · <span className="text-warning">versión demo publicada</span>
+        Guía paso a paso para la Sede del Ayuntamiento de Madrid.
+        {process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' && (
+          <span className="text-warning"> · Demo publicada</span>
+        )}
       </p>
 
-      {process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' && (
+      {process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' && !embedded && (
         <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-text-secondary">
           En GitHub Pages no hay servidor: ves un <strong>caso de ejemplo</strong> (Movistar, CP
           28013) y la guía Sede. Para generar tu reclamación con IA y guardar el justificante, usa la
@@ -51,7 +56,7 @@ export default function StaticSedeCopilot() {
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className={`grid gap-8 lg:grid-cols-2 ${embedded ? 'mt-6' : 'mt-8'}`}>
         <div className="space-y-4">
           <h2 className="font-display text-2xl">Presenta en la web oficial</h2>
           <p className="text-sm text-text-secondary">
