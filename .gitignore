@@ -12,6 +12,7 @@
 # next.js
 /.next/
 /out/
+.pages-stash/
 
 # production
 /build
@@ -27,6 +28,12 @@ yarn-error.log*
 
 # local env files
 .env*.local
+
+# database & uploads
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/prisma/
+/data/uploads
 
 # vercel
 .vercel

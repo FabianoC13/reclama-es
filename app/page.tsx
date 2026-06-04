@@ -73,6 +73,19 @@ export default function LandingPage() {
             Reclama es una herramienta de asistencia administrativa. No proporciona
             asesoramiento jurídico. Para consejo legal, consulta a un abogado.
           </motion.p>
+          {process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' ? (
+            <motion.p variants={fadeUp} className="mt-4">
+              <Link href="/presentar-madrid" className="text-sm text-accent-blue underline">
+                Probar guía Sede Madrid (demo)
+              </Link>
+            </motion.p>
+          ) : process.env.NODE_ENV === 'development' ? (
+            <motion.p variants={fadeUp} className="mt-4">
+              <Link href="/dev" className="text-sm text-accent-blue underline">
+                Dev: crear caso de prueba Madrid (Tier 2)
+              </Link>
+            </motion.p>
+          ) : null}
         </motion.div>
         <ChevronDown className="absolute bottom-8 h-6 w-6 animate-bounce-subtle text-text-tertiary" />
       </section>
