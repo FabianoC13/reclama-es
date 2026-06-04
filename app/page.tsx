@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ProcedimientosSection from "@/components/home/ProcedimientosSection";
+import GuiaEnvioSection from "@/components/home/GuiaEnvioSection";
+import StaticSedeCopilot from "@/components/tier2/StaticSedeCopilot";
 import { fadeUp, stagger, easeTrans, viewport } from "@/lib/motion";
 
 const CLAIM_TYPES = [
@@ -25,7 +28,7 @@ export default function LandingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-4 pt-24 text-center sm:px-6 lg:px-8">
+      <section className="relative flex min-h-[85vh] flex-col items-center justify-center px-4 pt-8 text-center sm:px-6 lg:px-8">
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -62,30 +65,16 @@ export default function LandingPage() {
               <Link href="/reclamacion">Empezar mi reclamación</Link>
             </Button>
             <Button asChild variant="secondary" size="lg">
-              <a href="#como-funciona">Cómo funciona</a>
+              <a href="#presentar-sede">Guía Sede Madrid</a>
             </Button>
           </motion.div>
-          <motion.p
-            variants={fadeUp}
-            transition={easeTrans}
-            className="mt-6 text-sm text-text-tertiary"
-          >
-            Reclama es una herramienta de asistencia administrativa. No proporciona
-            asesoramiento jurídico. Para consejo legal, consulta a un abogado.
-          </motion.p>
-          {process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true' ? (
-            <motion.p variants={fadeUp} className="mt-4">
-              <Link href="/presentar-madrid" className="text-sm text-accent-blue underline">
-                Probar guía Sede Madrid (demo)
-              </Link>
-            </motion.p>
-          ) : process.env.NODE_ENV === 'development' ? (
+          {process.env.NODE_ENV === 'development' && (
             <motion.p variants={fadeUp} className="mt-4">
               <Link href="/dev" className="text-sm text-accent-blue underline">
-                Dev: crear caso de prueba Madrid (Tier 2)
+                Dev: caso de prueba con base de datos (Tier 2 completo)
               </Link>
             </motion.p>
-          ) : null}
+          )}
         </motion.div>
         <ChevronDown className="absolute bottom-8 h-6 w-6 animate-bounce-subtle text-text-tertiary" />
       </section>
@@ -93,7 +82,7 @@ export default function LandingPage() {
       {/* Cómo funciona */}
       <section
         id="como-funciona"
-        className="bg-bg-surface py-16 lg:py-24"
+        className="scroll-mt-24 bg-bg-surface py-16 lg:py-24"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <motion.h2
@@ -144,6 +133,15 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      <ProcedimientosSection />
+      <GuiaEnvioSection />
+
+      <section id="presentar-sede" className="scroll-mt-24 bg-bg-surface py-16 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <StaticSedeCopilot embedded />
         </div>
       </section>
 

@@ -1,5 +1,5 @@
-import StaticSedeCopilot from '@/components/tier2/StaticSedeCopilot';
+import RedirectToHash from '@/components/RedirectToHash';
 
 export default function PresentarMadridPage() {
-  return <StaticSedeCopilot />;
+  return <RedirectToHash hash="#presentar-sede" />;
 }
