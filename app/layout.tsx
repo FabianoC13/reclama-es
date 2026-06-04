@@ -27,9 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${inter.variable} ${lora.variable}`}>
       <body>
-        <DisclaimerBanner />
-        <Navbar />
-        <main className="min-h-screen pt-20">{children}</main>
+        <header className="site-header no-print sticky top-0 z-50">
+          <DisclaimerBanner />
+          <Navbar />
+        </header>
+        <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>

@@ -6,13 +6,20 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import DocumentViewer from '@/components/resultado/DocumentViewer';
 import DisclaimerModal from '@/components/resultado/DisclaimerModal';
-import { clearWizardData, loadGeneratedDocument } from '@/lib/wizard-store';
+import {
+  clearWizardData,
+  loadGeneratedDocument,
+  loadWizardData,
+} from '@/lib/wizard-store';
+import { loadCaseId, saveCaseId } from '@/lib/case-store';
 import type { DocumentoGenerado } from '@/lib/types';
 
 export default function ResultadoPage() {
   const router = useRouter();
   const [doc, setDoc] = useState<DocumentoGenerado | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [caseId, setCaseId] = useState<string | null>(null);
+  const [tier2Available, setTier2Available] = useState<boolean | null>(null);
 
   useEffect(() => {
     const loaded = loadGeneratedDocument();
@@ -21,6 +28,30 @@ export default function ResultadoPage() {
       return;
     }
     setDoc(loaded);
+
+    const wizard = loadWizardData();
+    const existingId = loadCaseId();
+    void (async () => {
+      const res = await fetch('/api/cases/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wizardData: wizard,
+          documento: loaded,
+          caseId: existingId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        saveCaseId(data.caseId);
+        setCaseId(data.caseId);
+        const routeRes = await fetch(`/api/cases/${data.caseId}/tier2/route`);
+        if (routeRes.ok) {
+          const routeData = await routeRes.json();
+          setTier2Available(!!routeData.bestRoute);
+        }
+      }
+    })();
   }, [router]);
 
   const handlePrint = () => {
@@ -50,6 +81,27 @@ export default function ResultadoPage() {
         </div>
 
         <aside className="no-print space-y-4">
+          {caseId && (
+            <div className="card-surface space-y-3 p-4">
+              <p className="font-medium text-sm">Presentación electrónica oficial</p>
+              <p className="text-xs text-text-secondary">
+                El correo es útil, pero la Sede oficial puede darte un justificante con fecha. Preparamos el
+                expediente y te guiamos paso a paso.
+              </p>
+              {tier2Available ? (
+                <Button asChild className="w-full">
+                  <Link href={`/casos/${caseId}/tier2`}>Presentar en Sede Electrónica</Link>
+                </Button>
+              ) : (
+                <p className="text-xs text-text-tertiary">
+                  Aún no hay ruta verificada para tu municipio. Usa la guía de envío o el flujo por correo.
+                </p>
+              )}
+              <Button asChild variant="secondary" className="w-full" size="sm">
+                <Link href={`/casos/${caseId}/tier1-email`}>Usar correo en su lugar</Link>
+              </Button>
+            </div>
+          )}
           <Button className="w-full" onClick={() => setModalOpen(true)}>
             Descargar PDF (borrador)
           </Button>

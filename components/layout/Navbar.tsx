@@ -2,11 +2,21 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 
+const FLOW_PATHS = ['/reclamacion', '/resultado'];
+
+function isFlowPath(pathname: string | null) {
+  if (!pathname) return false;
+  return FLOW_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export default function Navbar() {
+  const pathname = usePathname();
+  const inFlow = isFlowPath(pathname);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -17,49 +27,72 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   return (
     <>
       <nav
         className={cn(
-          'no-print fixed left-0 right-0 top-0 z-50 transition-all duration-300',
+          'w-full transition-all duration-300',
           scrolled
             ? 'border-b border-border bg-bg-surface/95 py-3 backdrop-blur-md'
-            : 'bg-transparent py-4',
+            : 'border-b border-transparent bg-bg-primary/80 py-4 backdrop-blur-sm',
         )}
-        style={{ top: 'var(--banner-offset, 0px)' }}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="font-display text-xl font-medium text-text-primary">
             Reclama
           </Link>
 
-          <div className="hidden items-center gap-8 md:flex">
-            <Link href="/#como-funciona" className="text-sm font-medium text-text-secondary hover:text-text-primary">
-              Cómo funciona
+          {inFlow ? (
+            <Link
+              href="/"
+              className="text-sm font-medium text-text-secondary hover:text-text-primary"
+            >
+              Salir
             </Link>
-            <Link href="/procedimientos" className="text-sm font-medium text-text-secondary hover:text-text-primary">
-              Procedimientos
-            </Link>
-            <Link href="/guia-envio" className="text-sm font-medium text-text-secondary hover:text-text-primary">
-              Guía de envío
-            </Link>
-            <Button asChild>
-              <Link href="/reclamacion">Empezar reclamación</Link>
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="hidden items-center gap-8 md:flex">
+                <Link
+                  href="/#como-funciona"
+                  className="text-sm font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Cómo funciona
+                </Link>
+                <Link
+                  href="/procedimientos"
+                  className="text-sm font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Procedimientos
+                </Link>
+                <Link
+                  href="/guia-envio"
+                  className="text-sm font-medium text-text-secondary hover:text-text-primary"
+                >
+                  Guía de envío
+                </Link>
+                <Button asChild>
+                  <Link href="/reclamacion">Empezar reclamación</Link>
+                </Button>
+              </div>
 
-          <button
-            type="button"
-            className="rounded-lg border border-border p-2 md:hidden"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Abrir menú"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+              <button
+                type="button"
+                className="rounded-lg border border-border p-2 md:hidden"
+                onClick={() => setMenuOpen(true)}
+                aria-label="Abrir menú"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
-      {menuOpen && (
+      {menuOpen && !inFlow && (
         <div className="fixed inset-0 z-[60] bg-bg-primary p-6 md:hidden">
           <div className="mb-8 flex items-center justify-between">
             <span className="font-display text-xl">Reclama</span>

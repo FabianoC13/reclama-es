@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Case {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  wizardDataJson     String
+  documentoJson      String?
+  ciudad             String?
+  codigoPostal       String?
+  autonomousCommunity String?
+  claimCategory      String?
+  claimAmount        Float?
+  companyName        String?
+  companyCity        String?
+  status             String   @default("complaint_generated")
+  tier2Status        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  packages           SedeSubmissionPackage[]
+  receipts           OfficialSubmissionReceipt[]
+  timeline           SubmissionTimelineEvent[]
+  idReadiness        UserElectronicIdReadiness?
+
+  @@index([sessionId])
+}
+
+model OfficialAuthority {
+  id                  String   @id @default(cuid())
+  name                String
+  shortName           String
+  authorityType       String
+  countryCode         String   @default("ES")
+  autonomousCommunity String?
+  province            String?
+  municipality        String?
+  postalCodePrefixes  String?
+  officialWebsiteUrl  String?
+  contactEmail        String?
+  phone               String?
+  address             String?
+  supportedLanguages  String   @default("es")
+  isActive            Boolean  @default(true)
+  verificationStatus  String   @default("verified")
+  lastVerifiedAt      DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  routes              OfficialSubmissionRoute[]
+}
+
+model OfficialSubmissionRoute {
+  id                      String   @id @default(cuid())
+  authorityId             String
+  routeName               String
+  routeSlug               String   @unique
+  routeType               String
+  procedureName           String
+  officialProcedureUrl    String?
+  onlineStartUrl          String?
+  documentUploadUrl       String?
+  fallbackUrl             String?
+  fallbackEmail           String?
+  requiresElectronicId    Boolean  @default(true)
+  supportedAuthMethods    String
+  mayRequireAutofirma     Boolean  @default(false)
+  autofirmaRequiredKnown  Boolean  @default(false)
+  receiptExpected         Boolean  @default(true)
+  receiptNames            String?
+  attachmentMaxSizeMb     Int?
+  allowedAttachmentTypes  String?
+  routeCoverage           String   @default("municipality")
+  claimCategoriesSupported String?
+  stepGuideJson           String?
+  verificationStatus      String   @default("verified")
+  lastVerifiedAt          DateTime?
+  notesInternal           String?
+  notesUserFacing         String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  authority               OfficialAuthority @relation(fields: [authorityId], references: [id])
+  packages                SedeSubmissionPackage[]
+  receipts                OfficialSubmissionReceipt[]
+
+  @@index([authorityId])
+}
+
+model SedeSubmissionPackage {
+  id                    String   @id @default(cuid())
+  caseId                String
+  sessionId             String
+  routeId               String
+  status                String   @default("draft")
+  plainTextFacts        String?
+  plainTextRequest      String?
+  plainTextCompanyData  String?
+  plainTextConsumerData String?
+  plainTextFactsShort   String?
+  plainTextRequestShort String?
+  plainTextSummary      String?
+  evidenceIndexJson     String?
+  checklistJson         String?
+  complaintFilePath     String?
+  coverSheetFilePath    String?
+  evidenceIndexFilePath String?
+  packageVersion        Int      @default(1)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  case                  Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  route                 OfficialSubmissionRoute @relation(fields: [routeId], references: [id])
+  receipts              OfficialSubmissionReceipt[]
+
+  @@index([caseId])
+}
+
+model OfficialSubmissionReceipt {
+  id                String   @id @default(cuid())
+  caseId            String
+  sessionId         String
+  packageId         String
+  routeId           String
+  receiptFilePath   String?
+  receiptNumber     String?
+  registryNumber    String?
+  submittedAt       DateTime?
+  authorityName     String?
+  procedureName     String?
+  receiptSource     String   @default("user_provided")
+  parsedDataJson    String?
+  verificationStatus String  @default("user_provided")
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  case              Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  package           SedeSubmissionPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  route             OfficialSubmissionRoute @relation(fields: [routeId], references: [id])
+
+  @@index([caseId])
+}
+
+model SubmissionTimelineEvent {
+  id           String   @id @default(cuid())
+  caseId       String
+  sessionId    String
+  eventType    String
+  title        String
+  description  String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+model UserElectronicIdReadiness {
+  id                   String   @id @default(cuid())
+  caseId               String   @unique
+  sessionId            String
+  hasClaveMovil        Boolean  @default(false)
+  hasClavePermanente   Boolean  @default(false)
+  hasCertificadoDigital Boolean @default(false)
+  hasDnie              Boolean  @default(false)
+  hasEidas             Boolean  @default(false)
+  hasAutofirmaInstalled Boolean?
+  unsure               Boolean  @default(false)
+  hasNoId              Boolean  @default(false)
+  lastAskedAt          DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  case                 Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
