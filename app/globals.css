@@ -3,25 +3,137 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --bg-primary: #e8e4dc;
+  --bg-surface: #f5f2ec;
+  --bg-elevated: #f5f2ec;
+  --text-primary: #2a2420;
+  --text-secondary: #6a6258;
+  --text-tertiary: #a09890;
+  --border: #d0ccc0;
+  --border-focus: #b0a898;
+  --accent-blue: #6a9bcc;
+  --accent-green: #788c5d;
+  --warning: #c18544;
+  --danger: #b54a3e;
+  --success: var(--accent-green);
+  --hover-bg: rgba(0, 0, 0, 0.06);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-ui: var(--font-sans), system-ui, sans-serif;
+  --font-reading: var(--font-display), Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+    font-family: var(--font-ui);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  .font-display {
+    font-family: var(--font-reading);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-text-primary px-5 py-2.5 text-sm font-medium text-bg-surface transition-all duration-200 hover:-translate-y-px hover:bg-[#3d3028];
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 py-2.5 text-sm font-medium text-text-primary transition-all duration-200 hover:border-border-focus hover:bg-bg-surface;
+  }
+
+  .card-surface {
+    @apply rounded-2xl border border-border bg-bg-surface p-6 shadow-sm;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-border bg-bg-elevated px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-border-focus focus:ring-2 focus:ring-border-focus;
+  }
+
+  .info-box {
+    @apply rounded-xl border border-border bg-bg-elevated px-4 py-3 text-sm text-text-secondary;
+  }
+
+  .disclaimer-box {
+    @apply rounded-xl border border-l-4 border-border border-l-warning bg-[#f5ebe3] px-4 py-4 text-sm text-text-secondary;
+  }
+
+  .landing-nav {
+    @apply fixed left-0 right-0 top-0 z-50 transition-all duration-300;
+  }
+
+  .landing-nav.scrolled {
+    border-bottom: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--bg-surface) 80%, transparent);
+    backdrop-filter: blur(12px);
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+@media print {
+  nav,
+  footer,
+  .no-print,
+  .disclaimer-banner,
+  aside,
+  [class*='fixed'][class*='inset-0'] {
+    display: none !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  body::before {
+    content: 'BORRADOR';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 72px;
+    opacity: 0.08;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .print-document {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-family: Georgia, 'Times New Roman', serif !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .print-document textarea {
+    display: none !important;
+  }
+
+  .print-document .whitespace-pre-wrap {
+    display: block !important;
   }
 }
